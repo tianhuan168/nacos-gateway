@@ -1,0 +1,72 @@
+# 端口
+server:
+  port: 8888
+
+spring:
+  application:
+    # 应用名称
+    name: gateway
+
+  # 注册中心
+  cloud:
+    nacos:
+      config:
+        server-addr: localhost:8848
+        file-extension: yaml
+        group: gateway
+        extension-configs:
+          - data-id: gateway1.yaml
+            group: gateway
+            refresh: true
+
+          - data-id: gateway2.yaml
+            group: gateway
+            refresh: true
+        refresh-enabled: true
+
+      discovery:
+        server-addr: localhost:8848
+        enabled: true
+    gateway:
+      routes:
+      - id: after_route
+        uri: lb://producer/test2
+        predicates:
+        - After=2019-01-20T17:42:47.789-07:00[America/Denver]
+      default-filters:
+      - name: Hystrix
+        args:
+          name: fallbackcmd
+          fallbackUri: forward:/fallback
+       # - DedupeResponseHeader=Access-Control-Allow-Origin, RETAIN_UNIQUE
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedHeaders: '*'
+            allowedMethods: '*'
+            allowedOrigins: '*'
+      discovery:
+        locator:
+          #表明gateway开启服务注册和发现的功能，并且spring cloud gateway自动根据服务发现为每一个服务创建了一个router，这个router将以服务名开头的请求路径转发到对应的服务。
+          enabled: true
+          #是将请求路径上的服务名配置为小写（因为服务注册的时候，向注册中心注册时将服务名转成大写的了），比如以/service-hi/*的请求路径被路由转发到服务名为service-hi的服务上。
+          lower-case-service-id: true
+#          filters:
+#            - StripPrefix=1
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    gateway:
+      enabled: true
+    health:
+      show-details: always
+hystrix:
+  command:
+    default:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 70000
